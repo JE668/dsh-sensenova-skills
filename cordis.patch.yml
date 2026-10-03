@@ -1,0 +1,24 @@
+# dsh-sensenova-skills：商汤 SenseNova 官方 skills 仓库（MIT）的 DSH 桥接插件。
+#
+# 将 OpenSenseNova/SenseNova-Skills 的 skills（SKILL.md 规范 + Python 脚本）
+# 以 DSH 工具形式暴露给 agent：
+#   1. sensenova_skills_sync  —— 从上游仓库同步 skills 快照（跟随官方更新）
+#   2. sensenova_skills_list  —— 浏览已同步的 skill 清单（名称/描述/触发词）
+#   3. sensenova_skills_read  —— 读取某个 skill 的完整 SKILL.md 及资源
+#
+# skills 的执行是 agent 驱动的：agent 读取 SKILL.md 后按其中指令运行
+# bash / Python 脚本（依赖 SenseNova API key，见各 skill 文档与 .env.example）。
+#
+# 同步位置（默认）：~/.dsh/plugins/dsh-sensenova-skills/runtime/
+# 可选配置：
+#
+#   - id: dsh-sensenova-skills
+#     config:
+#       repoURL: https://github.com/OpenSenseNova/SenseNova-Skills  # 可改为镜像/私有 fork
+#       ref: main        # 可锁定到具体 tag / commit
+#       runtimeDir: /custom/path   # 可选，覆盖默认运行时目录
+
+- insert:
+  - id: dsh-sensenova-skills
+    name: dsh-sensenova-skills
+    config: {}

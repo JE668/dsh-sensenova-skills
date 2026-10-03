@@ -1,0 +1,55 @@
+{
+  "name": "dsh-sensenova-skills",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness plugin: bridge OpenSenseNova/SenseNova-Skills (MIT) agent skills into DSH — sync upstream skill packs, browse and load SKILL.md instructions so the agent can drive SenseNova office skills (PPT, infographics, deep research, data analysis).",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "sync": "node scripts/sync-upstream.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "sensenova",
+    "agent-skills",
+    "skill",
+    "sn-infographic",
+    "sn-ppt-standard",
+    "sn-deep-research"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JE668/dsh-sensenova-skills.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
