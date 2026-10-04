@@ -55,7 +55,9 @@ var zh = {
   ref: "Git ref",
   refHint: "\u5206\u652F / tag / \u5B8C\u6574 commit hash\u3002",
   runtimeDir: "\u8FD0\u884C\u65F6\u76EE\u5F55",
-  runtimeHint: "\u7559\u7A7A\u5219\u4F7F\u7528 ~/.dsh/profiles/<\u5F53\u524D profile>/sensenova-skills\u3002",
+  runtimeHint: "\u4E0A\u6E38\u5FEB\u7167\u7684\u5B58\u653E\u76EE\u5F55\uFF1B\u7559\u7A7A\u4F7F\u7528 ~/.dsh/sensenova-skills\u3002",
+  linkDir: "\u6302\u8F7D\u76EE\u5F55\uFF08DSH \u626B\u63CF\u7684 skill \u6839\uFF09",
+  linkHint: "\u540C\u6B65\u540E\u6BCF\u4E2A skill \u4F1A\u4EE5\u7B26\u53F7\u94FE\u63A5\u6302\u5230\u8FD9\u91CC\u3002\u5FC5\u987B\u662F\u88AB\u626B\u63CF\u7684\u76EE\u5F55\uFF0Cskill \u624D\u4F1A\u8FDB\u5165\u4F1A\u8BDD\u76EE\u5F55\u3001\u53EF\u7528 /user-invocable \u624B\u52A8\u8C03\u7528\u3002\u7559\u7A7A\u4F7F\u7528 ~/.dsh/skills\u3002",
   save: "\u4FDD\u5B58",
   saving: "\u4FDD\u5B58\u4E2D\u2026",
   saved: "\u5DF2\u4FDD\u5B58\u3002",
@@ -76,7 +78,9 @@ var en = {
   ref: "Git ref",
   refHint: "Branch / tag / full commit hash.",
   runtimeDir: "Runtime directory",
-  runtimeHint: "Leave empty to use ~/.dsh/profiles/<current profile>/sensenova-skills.",
+  runtimeHint: "Where the upstream snapshot lands. Leave empty for ~/.dsh/sensenova-skills.",
+  linkDir: "Mount directory (a scanned DSH skill root)",
+  linkHint: "After syncing, each skill is symlinked here. It must be a scanned root for the skills to enter the session catalog and become user-invocable. Leave empty for ~/.dsh/skills.",
   save: "Save",
   saving: "Saving\u2026",
   saved: "Saved.",
@@ -209,7 +213,7 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
       setSyncing(false);
     }
   };
-  const status = config.syncedAt ? t("synced")(config.skillsCount ?? "?") : t("neverSynced");
+  const status = config.syncedAt ? t("synced")(config.skillsCount ?? "?") + (config.linkDir ? `  \xB7  ${config.linkDir}` : "") : t("neverSynced");
   return (0, import_react.createElement)(
     "div",
     { style: styles.card },
@@ -243,10 +247,22 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
       (0, import_react.createElement)("input", {
         style: styles.input,
         value: field("runtimeDir", ""),
-        placeholder: "~/.dsh/profiles/<profile>/sensenova-skills",
+        placeholder: "~/.dsh/sensenova-skills",
         onChange: (e) => set("runtimeDir", e.target.value)
       }),
       (0, import_react.createElement)("div", { style: styles.hint }, t("runtimeHint"))
+    ),
+    (0, import_react.createElement)(
+      "div",
+      { style: styles.field },
+      (0, import_react.createElement)("label", { style: styles.label }, t("linkDir")),
+      (0, import_react.createElement)("input", {
+        style: styles.input,
+        value: field("linkDir", ""),
+        placeholder: "~/.dsh/skills",
+        onChange: (e) => set("linkDir", e.target.value)
+      }),
+      (0, import_react.createElement)("div", { style: styles.hint }, t("linkHint"))
     ),
     (0, import_react.createElement)("div", { style: styles.box }, status),
     (0, import_react.createElement)(

@@ -21,7 +21,9 @@ const zh = {
   ref: 'Git ref',
   refHint: '分支 / tag / 完整 commit hash。',
   runtimeDir: '运行时目录',
-  runtimeHint: '留空则使用 ~/.dsh/profiles/<当前 profile>/sensenova-skills。',
+  runtimeHint: '上游快照的存放目录；留空使用 ~/.dsh/sensenova-skills。',
+  linkDir: '挂载目录（DSH 扫描的 skill 根）',
+  linkHint: '同步后每个 skill 会以符号链接挂到这里。必须是被扫描的目录，skill 才会进入会话目录、可用 /user-invocable 手动调用。留空使用 ~/.dsh/skills。',
   save: '保存',
   saving: '保存中…',
   saved: '已保存。',
@@ -43,7 +45,9 @@ const en = {
   ref: 'Git ref',
   refHint: 'Branch / tag / full commit hash.',
   runtimeDir: 'Runtime directory',
-  runtimeHint: 'Leave empty to use ~/.dsh/profiles/<current profile>/sensenova-skills.',
+  runtimeHint: 'Where the upstream snapshot lands. Leave empty for ~/.dsh/sensenova-skills.',
+  linkDir: 'Mount directory (a scanned DSH skill root)',
+  linkHint: 'After syncing, each skill is symlinked here. It must be a scanned root for the skills to enter the session catalog and become user-invocable. Leave empty for ~/.dsh/skills.',
   save: 'Save',
   saving: 'Saving…',
   saved: 'Saved.',
@@ -148,7 +152,7 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
   };
 
   const status = config.syncedAt
-    ? t('synced')(config.skillsCount ?? '?')
+    ? t('synced')(config.skillsCount ?? '?') + (config.linkDir ? `  ·  ${config.linkDir}` : '')
     : t('neverSynced');
 
   return h('div', { style: styles.card },
@@ -174,10 +178,19 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
       h('label', { style: styles.label }, t('runtimeDir')),
       h('input', {
         style: styles.input, value: field('runtimeDir', ''),
-        placeholder: '~/.dsh/profiles/<profile>/sensenova-skills',
+        placeholder: '~/.dsh/sensenova-skills',
         onChange: (e) => set('runtimeDir', e.target.value),
       }),
       h('div', { style: styles.hint }, t('runtimeHint')),
+    ),
+    h('div', { style: styles.field },
+      h('label', { style: styles.label }, t('linkDir')),
+      h('input', {
+        style: styles.input, value: field('linkDir', ''),
+        placeholder: '~/.dsh/skills',
+        onChange: (e) => set('linkDir', e.target.value),
+      }),
+      h('div', { style: styles.hint }, t('linkHint')),
     ),
     h('div', { style: styles.box }, status),
     h('div', { style: styles.row },

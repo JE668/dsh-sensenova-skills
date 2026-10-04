@@ -15,6 +15,7 @@ export function redactConfig(config = {}) {
     repoURL: config.repoURL ?? '',
     ref: config.ref ?? '',
     runtimeDir: config.runtimeDir ?? '',
+    linkDir: config.linkDir ?? '',
     syncedAt: config.lastSyncedAt ?? null,
     skillsCount: config.lastSkillsCount ?? null,
     via: config.lastVia ?? null,
