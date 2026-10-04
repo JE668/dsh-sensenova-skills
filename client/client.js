@@ -64,14 +64,14 @@ var COMMON_ENV_KEYS = Object.freeze([
 var name = "dsh-sensenova-skills";
 var inject = ["slots", "connection", "locale"];
 var NS = "sensenova-skills";
-var DEFAULT_REPO = "https://github.com/OpenSenseNova/SenseNova-Skills";
+var DEFAULT_REPO = "https://github.com/OpenSenseNova/SenseNova-Skills.git";
 var zh = {
   section: "SenseNova Skills",
   loading: "\u52A0\u8F7D\u4E2D\u2026",
   loadFailed: "\u65E0\u6CD5\u8BFB\u53D6\u914D\u7F6E\u3002",
   repoTitle: "\u4ED3\u5E93\u4E0E\u6302\u8F7D",
   repoURL: "\u4E0A\u6E38\u4ED3\u5E93 URL",
-  repoHint: "git \u4ED3\u5E93\u5730\u5740\uFF1B\u9ED8\u8BA4\u5B98\u65B9 SenseNova-Skills\u3002",
+  repoHint: "\u9ED8\u8BA4\u5373\u5B98\u65B9\u4ED3\u5E93 OpenSenseNova/SenseNova-Skills\uFF0C\u65E0\u9700\u4FEE\u6539\u3002",
   ref: "Git ref",
   refHint: "\u5206\u652F / tag / commit\u3002",
   runtimeDir: "\u5FEB\u7167\u76EE\u5F55",
@@ -87,6 +87,7 @@ var zh = {
   advancedHint: "\u4EE5\u4E0B\u6309\u5B98\u65B9\u6587\u6863\u9884\u586B\u4E86\u9ED8\u8BA4\u503C\uFF0C\u901A\u5E38\u65E0\u9700\u4FEE\u6539\u3002",
   configured: "\u5DF2\u914D\u7F6E",
   notConfigured: "\u672A\u914D\u7F6E",
+  usingDefault: "\u5DF2\u586B\u5B98\u65B9\u9ED8\u8BA4\u503C",
   skillsTitle: "Skills \u5F00\u5173",
   skillsHint: "\u5173\u95ED\u7684 skill \u4E0D\u4F1A\u6302\u8F7D\uFF0C\u56E0\u6B64\u4E0D\u4F1A\u8FDB\u5165\u4F1A\u8BDD\u76EE\u5F55\u3002",
   enableAll: "\u5168\u5F00",
@@ -106,7 +107,7 @@ var en = {
   loadFailed: "Could not read the configuration.",
   repoTitle: "Repository and mount",
   repoURL: "Upstream repo URL",
-  repoHint: "Git repository URL; defaults to the official SenseNova-Skills repo.",
+  repoHint: "Defaults to the official OpenSenseNova/SenseNova-Skills repository; no change needed.",
   ref: "Git ref",
   refHint: "Branch / tag / commit.",
   runtimeDir: "Snapshot directory",
@@ -122,6 +123,7 @@ var en = {
   advancedHint: "Prefilled from the official API documentation; rarely needs changing.",
   configured: "configured",
   notConfigured: "not set",
+  usingDefault: "official default",
   skillsTitle: "Skill toggles",
   skillsHint: "A disabled skill is not mounted, so it never enters the session catalog.",
   enableAll: "Enable all",
@@ -291,7 +293,13 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
     { style: { maxWidth: 620 } },
     /* ① 仓库与挂载 */
     (0, import_react.createElement)("div", { style: S.h2 }, t("repoTitle")),
-    (0, import_react.createElement)("div", { style: S.field }, (0, import_react.createElement)("label", { style: S.label }, t("repoURL")), input("repoURL", { fallback: DEFAULT_REPO }), (0, import_react.createElement)("div", { style: S.hint }, t("repoHint"))),
+    (0, import_react.createElement)(
+      "div",
+      { style: S.field },
+      (0, import_react.createElement)("label", { style: S.label }, t("repoURL"), (0, import_react.createElement)("code", { style: { fontSize: 11, opacity: 0.6 } }, DEFAULT_REPO)),
+      input("repoURL", { fallback: DEFAULT_REPO }),
+      (0, import_react.createElement)("div", { style: S.hint }, t("repoHint"))
+    ),
     (0, import_react.createElement)("div", { style: S.field }, (0, import_react.createElement)("label", { style: S.label }, t("ref")), input("ref", { fallback: "main" }), (0, import_react.createElement)("div", { style: S.hint }, t("refHint"))),
     (0, import_react.createElement)("div", { style: S.field }, (0, import_react.createElement)("label", { style: S.label }, t("runtimeDir")), input("runtimeDir", { placeholder: "~/.dsh/sensenova-skills" }), (0, import_react.createElement)("div", { style: S.hint }, t("runtimeHint"))),
     (0, import_react.createElement)("div", { style: S.field }, (0, import_react.createElement)("label", { style: S.label }, t("linkDir")), input("linkDir", { placeholder: "~/.dsh/skills" }), (0, import_react.createElement)("div", { style: S.hint }, t("linkHint"))),
@@ -328,16 +336,30 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
         disabled: busy,
         onClick: () => setShowAdvanced((v) => !v)
       }, showAdvanced ? t("hideAdvanced") : t("showAdvanced")),
-      (0, import_react.createElement)("button", { style: S.secondary, disabled: busy || !envDraft.SN_API_KEY, onClick: saveEnv }, t("save")),
+      (0, import_react.createElement)("button", {
+        style: S.secondary,
+        disabled: busy || Object.keys(envDraft).length === 0,
+        onClick: saveEnv
+      }, t("save")),
       config.envFile ? (0, import_react.createElement)("span", { style: S.hint }, config.envFile) : null
     ),
     showAdvanced ? (0, import_react.createElement)(
       "div",
       null,
       (0, import_react.createElement)("div", { style: { ...S.hint, marginTop: 14 } }, t("advancedHint")),
+      (0, import_react.createElement)(
+        "div",
+        { style: S.row },
+        (0, import_react.createElement)("button", {
+          style: S.secondary,
+          disabled: busy || Object.keys(envDraft).length === 0,
+          onClick: saveEnv
+        }, t("save"))
+      ),
       ...COMMON_ENV_KEYS.filter(([key]) => key !== "SN_API_KEY").map(([key, label, hint, secret, fallback]) => {
-        const known = envKeys[key]?.configured === true;
-        const current = envDraft[key] ?? known ? envDraft[key] : fallback;
+        const info = envKeys[key] ?? {};
+        const known = info.configured === true;
+        const shown = key in envDraft ? envDraft[key] : known && !info.secret ? "" : info.default ?? fallback ?? "";
         return (0, import_react.createElement)(
           "div",
           { style: S.field, key },
@@ -347,12 +369,16 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
             label,
             (0, import_react.createElement)("code", { style: { fontSize: 11, opacity: 0.6 } }, key),
             " \xB7 ",
-            (0, import_react.createElement)("span", { style: S.tag }, known && !secret ? envDraft[key] ?? "\u5DF2\u8BBE" : known ? t("configured") : t("notConfigured"))
+            (0, import_react.createElement)(
+              "span",
+              { style: S.tag },
+              known ? info.secret ? t("configured") : t("configured") : info.default ? t("usingDefault") : t("notConfigured")
+            )
           ),
           (0, import_react.createElement)("input", {
             style: S.input,
             type: secret ? "password" : "text",
-            value: current ?? "",
+            value: shown,
             placeholder: known ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\uFF08\u7559\u7A7A\u4FDD\u6301\u4E0D\u53D8\uFF09" : hint || key,
             onChange: (e) => {
               setMsg(null);

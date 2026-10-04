@@ -14,7 +14,7 @@ const name = 'dsh-sensenova-skills';
 const inject = ['slots', 'connection', 'locale'];
 
 const NS = 'sensenova-skills';
-const DEFAULT_REPO = 'https://github.com/OpenSenseNova/SenseNova-Skills';
+const DEFAULT_REPO = 'https://github.com/OpenSenseNova/SenseNova-Skills.git';
 
 const zh = {
   section: 'SenseNova Skills',
@@ -22,7 +22,7 @@ const zh = {
   loadFailed: '无法读取配置。',
   repoTitle: '仓库与挂载',
   repoURL: '上游仓库 URL',
-  repoHint: 'git 仓库地址；默认官方 SenseNova-Skills。',
+  repoHint: '默认即官方仓库 OpenSenseNova/SenseNova-Skills，无需修改。',
   ref: 'Git ref',
   refHint: '分支 / tag / commit。',
   runtimeDir: '快照目录',
@@ -38,6 +38,7 @@ const zh = {
   advancedHint: '以下按官方文档预填了默认值，通常无需修改。',
   configured: '已配置',
   notConfigured: '未配置',
+  usingDefault: '已填官方默认值',
   skillsTitle: 'Skills 开关',
   skillsHint: '关闭的 skill 不会挂载，因此不会进入会话目录。',
   enableAll: '全开',
@@ -58,7 +59,7 @@ const en = {
   loadFailed: 'Could not read the configuration.',
   repoTitle: 'Repository and mount',
   repoURL: 'Upstream repo URL',
-  repoHint: 'Git repository URL; defaults to the official SenseNova-Skills repo.',
+  repoHint: 'Defaults to the official OpenSenseNova/SenseNova-Skills repository; no change needed.',
   ref: 'Git ref',
   refHint: 'Branch / tag / commit.',
   runtimeDir: 'Snapshot directory',
@@ -74,6 +75,7 @@ const en = {
   advancedHint: 'Prefilled from the official API documentation; rarely needs changing.',
   configured: 'configured',
   notConfigured: 'not set',
+  usingDefault: 'official default',
   skillsTitle: 'Skill toggles',
   skillsHint: 'A disabled skill is not mounted, so it never enters the session catalog.',
   enableAll: 'Enable all',
@@ -228,7 +230,11 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
   return h('div', { style: { maxWidth: 620 } },
     /* ① 仓库与挂载 */
     h('div', { style: S.h2 }, t('repoTitle')),
-    h('div', { style: S.field }, h('label', { style: S.label }, t('repoURL')), input('repoURL', { fallback: DEFAULT_REPO }), h('div', { style: S.hint }, t('repoHint'))),
+    h('div', { style: S.field },
+      h('label', { style: S.label }, t('repoURL'), h('code', { style: { fontSize: 11, opacity: 0.6 } }, DEFAULT_REPO)),
+      input('repoURL', { fallback: DEFAULT_REPO }),
+      h('div', { style: S.hint }, t('repoHint')),
+    ),
     h('div', { style: S.field }, h('label', { style: S.label }, t('ref')), input('ref', { fallback: 'main' }), h('div', { style: S.hint }, t('refHint'))),
     h('div', { style: S.field }, h('label', { style: S.label }, t('runtimeDir')), input('runtimeDir', { placeholder: '~/.dsh/sensenova-skills' }), h('div', { style: S.hint }, t('runtimeHint'))),
     h('div', { style: S.field }, h('label', { style: S.label }, t('linkDir')), input('linkDir', { placeholder: '~/.dsh/skills' }), h('div', { style: S.hint }, t('linkHint'))),
@@ -256,25 +262,39 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
         disabled: busy,
         onClick: () => setShowAdvanced((v) => !v),
       }, showAdvanced ? t('hideAdvanced') : t('showAdvanced')),
-      h('button', { style: S.secondary, disabled: busy || !envDraft.SN_API_KEY, onClick: saveEnv }, t('save')),
+      h('button', {
+        style: S.secondary,
+        disabled: busy || Object.keys(envDraft).length === 0,
+        onClick: saveEnv,
+      }, t('save')),
       config.envFile ? h('span', { style: S.hint }, config.envFile) : null,
     ),
     showAdvanced ? h('div', null,
       h('div', { style: { ...S.hint, marginTop: 14 } }, t('advancedHint')),
+      h('div', { style: S.row },
+        h('button', {
+          style: S.secondary,
+          disabled: busy || Object.keys(envDraft).length === 0,
+          onClick: saveEnv,
+        }, t('save')),
+      ),
       ...COMMON_ENV_KEYS.filter(([key]) => key !== 'SN_API_KEY').map(([key, label, hint, secret, fallback]) => {
-        const known = envKeys[key]?.configured === true;
-        const current = envDraft[key] ?? known ? envDraft[key] : fallback;
+        const info = envKeys[key] ?? {};
+        const known = info.configured === true;
+        // 默认值（官方预填）直接显示出来，让用户看到「已经填好了」而不是空白。
+        const shown = key in envDraft ? envDraft[key] : (known && !info.secret ? '' : (info.default ?? fallback ?? ''));
         return h('div', { style: S.field, key },
           h('label', { style: S.label },
             label,
             h('code', { style: { fontSize: 11, opacity: 0.6 } }, key),
             ' · ',
-            h('span', { style: S.tag }, known && !secret ? (envDraft[key] ?? '已设') : (known ? t('configured') : t('notConfigured'))),
+            h('span', { style: S.tag },
+              known ? (info.secret ? t('configured') : t('configured')) : (info.default ? t('usingDefault') : t('notConfigured'))),
           ),
           h('input', {
             style: S.input,
             type: secret ? 'password' : 'text',
-            value: current ?? '',
+            value: shown,
             placeholder: known ? '••••••••（留空保持不变）' : (hint || key),
             onChange: (e) => { setMsg(null); setEnvDraft((d) => ({ ...d, [key]: e.target.value })); },
           }),
