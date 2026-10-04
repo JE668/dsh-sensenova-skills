@@ -30,7 +30,12 @@ const zh = {
   linkDir: '挂载目录',
   linkHint: '每个 skill 会以符号链接挂到这里。必须是 DSH 扫描的目录，否则 skill 不生效。留空使用 ~/.dsh/skills。',
   envTitle: 'API 凭据与环境变量',
-  envHint: '写入 ~/.dsh/sensenova-skills/.env（权限 600），skill 脚本与 agent 可 source。值不回显，留空即清除。',
+  envHint: '写入 ~/.dsh/sensenova-skills/.env（权限 600），skill 脚本与 agent 可 source。值不回显，留空即保持不变。',
+  mainKey: 'SenseNova API Key',
+  mainKeyHint: '填这一个即可：图像、对话、文本、视觉各端点同源，会自动沿用同一个 key。',
+  showAdvanced: '更多变量（各端点 URL / 搜索 key / GitHub token）',
+  hideAdvanced: '收起',
+  advancedHint: '以下按官方文档预填了默认值，通常无需修改。',
   configured: '已配置',
   notConfigured: '未配置',
   skillsTitle: 'Skills 开关',
@@ -61,7 +66,12 @@ const en = {
   linkDir: 'Mount directory',
   linkHint: 'Each skill is symlinked here. It must be a scanned DSH root or the skills will not take effect. Leave empty for ~/.dsh/skills.',
   envTitle: 'API credentials and environment',
-  envHint: 'Written to ~/.dsh/sensenova-skills/.env (mode 600) for skill scripts and the agent to source. Values are never echoed back; empty clears the key.',
+  envHint: 'Written to ~/.dsh/sensenova-skills/.env (mode 600) for skill scripts and the agent to source. Values are never echoed back; empty keeps the current value.',
+  mainKey: 'SenseNova API Key',
+  mainKeyHint: 'This one field is enough: the image, chat, text and vision endpoints are the same origin and share this key automatically.',
+  showAdvanced: 'More variables (endpoint URLs, search keys, GitHub token)',
+  hideAdvanced: 'Hide',
+  advancedHint: 'Prefilled from the official API documentation; rarely needs changing.',
   configured: 'configured',
   notConfigured: 'not set',
   skillsTitle: 'Skill toggles',
@@ -118,6 +128,7 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
   const [draft, setDraft] = useState({});
   const [envDraft, setEnvDraft] = useState({});
   const [busy, setBusy] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [msg, setMsg] = useState(null);
 
   const apply = (res) => {
@@ -225,27 +236,51 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
     /* ② 凭据 */
     h('div', { style: S.h2 }, t('envTitle')),
     h('div', { style: S.hint }, t('envHint')),
-    ...COMMON_ENV_KEYS.map(([key, label, hint, secret]) => {
-      const known = envKeys[key]?.configured === true;
-      return h('div', { style: S.field, key },
-        h('label', { style: S.label },
-          label,
-          ' · ',
-          h('span', { style: S.tag }, known ? t('configured') : t('notConfigured')),
-        ),
-        h('input', {
-          style: S.input,
-          type: secret ? 'password' : 'text',
-          value: envDraft[key] ?? '',
-          placeholder: known ? '••••••••（留空保持不变）' : (hint || key),
-          onChange: (e) => { setMsg(null); setEnvDraft((d) => ({ ...d, [key]: e.target.value })); },
-        }),
-      );
-    }),
-    h('div', { style: S.row },
-      h('button', { style: styles_secondary(), disabled: busy || Object.keys(envDraft).length === 0, onClick: saveEnv }, t('save')),
-      h('span', { style: S.hint }, config.envFile ? config.envFile : ''),
+    h('div', { style: S.field },
+      h('label', { style: S.label },
+        t('mainKey'),
+        ' · ',
+        h('span', { style: S.tag }, envKeys.SN_API_KEY?.configured ? t('configured') : t('notConfigured')),
+      ),
+      h('input', {
+        style: S.input, type: 'password',
+        value: envDraft.SN_API_KEY ?? '',
+        placeholder: 'sk-…',
+        onChange: (e) => { setMsg(null); setEnvDraft((d) => ({ ...d, SN_API_KEY: e.target.value })); },
+      }),
+      h('div', { style: S.hint }, t('mainKeyHint')),
     ),
+    h('div', { style: S.row },
+      h('button', {
+        style: { ...S.secondary, marginRight: 4 },
+        disabled: busy,
+        onClick: () => setShowAdvanced((v) => !v),
+      }, showAdvanced ? t('hideAdvanced') : t('showAdvanced')),
+      h('button', { style: S.secondary, disabled: busy || !envDraft.SN_API_KEY, onClick: saveEnv }, t('save')),
+      config.envFile ? h('span', { style: S.hint }, config.envFile) : null,
+    ),
+    showAdvanced ? h('div', null,
+      h('div', { style: { ...S.hint, marginTop: 14 } }, t('advancedHint')),
+      ...COMMON_ENV_KEYS.filter(([key]) => key !== 'SN_API_KEY').map(([key, label, hint, secret, fallback]) => {
+        const known = envKeys[key]?.configured === true;
+        const current = envDraft[key] ?? known ? envDraft[key] : fallback;
+        return h('div', { style: S.field, key },
+          h('label', { style: S.label },
+            label,
+            h('code', { style: { fontSize: 11, opacity: 0.6 } }, key),
+            ' · ',
+            h('span', { style: S.tag }, known && !secret ? (envDraft[key] ?? '已设') : (known ? t('configured') : t('notConfigured'))),
+          ),
+          h('input', {
+            style: S.input,
+            type: secret ? 'password' : 'text',
+            value: current ?? '',
+            placeholder: known ? '••••••••（留空保持不变）' : (hint || key),
+            onChange: (e) => { setMsg(null); setEnvDraft((d) => ({ ...d, [key]: e.target.value })); },
+          }),
+        );
+      }),
+    ) : null,
 
     /* ③ 开关 */
     h('div', { style: S.h2 }, t('skillsTitle')),

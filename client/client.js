@@ -44,16 +44,20 @@ var SENSENOVA_SKILLS_ENDPOINTS = Object.freeze({
   setEnv: "skills.setEnv"
 });
 var COMMON_ENV_KEYS = Object.freeze([
-  ["SN_API_KEY", "SenseNova API Key", "\u591A\u6570 sn-* skill \u7684\u7EDF\u4E00\u51ED\u636E", true],
-  ["SN_BASE_URL", "SenseNova Base URL", "\u9ED8\u8BA4 https://token.sensenova.cn/v1", false],
-  ["SN_IMAGE_GEN_API_KEY", "\u6587\u751F\u56FE API Key", "sn-infographic / sn-image-* \u4F7F\u7528", true],
-  ["SN_IMAGE_GEN_BASE_URL", "\u6587\u751F\u56FE Base URL", "", false],
-  ["SN_CHAT_API_KEY", "\u5BF9\u8BDD/\u6587\u672C API Key", "sn-* \u9700\u8981 LLM \u65F6\u4F7F\u7528", true],
-  ["SN_CHAT_BASE_URL", "\u5BF9\u8BDD/\u6587\u672C Base URL", "", false],
-  ["SN_VISION_API_KEY", "\u89C6\u89C9\u7406\u89E3 API Key", "sn-image-caption / sn-da-image-caption \u4F7F\u7528", true],
-  ["SN_VISION_BASE_URL", "\u89C6\u89C9\u7406\u89E3 Base URL", "", false],
-  ["SERPER_API_KEY", "Serper \u641C\u7D22 Key", "sn-search-image / sn-search-academic \u4F7F\u7528", true],
-  ["GITHUB_TOKEN", "GitHub Token", "sn-search-code \u4F7F\u7528\uFF0C\u53EF\u63D0\u901F\u5E76\u63D0\u9AD8\u9650\u989D", true]
+  ["SN_API_KEY", "SenseNova API Key", "\u591A\u6570 sn-* skill \u7684\u7EDF\u4E00\u51ED\u636E\uFF08\u5FC5\u586B\uFF09", true, ""],
+  ["SN_BASE_URL", "SenseNova Base URL", "\u5B98\u65B9 OpenAI \u517C\u5BB9\u7AEF\u70B9", false, "https://token.sensenova.cn/v1"],
+  ["SN_IMAGE_GEN_API_KEY", "\u6587\u751F\u56FE API Key", "sn-infographic / sn-image-* \u4F7F\u7528\uFF1B\u7559\u7A7A\u5219\u590D\u7528 SN_API_KEY", true, ""],
+  ["SN_IMAGE_GEN_BASE_URL", "\u6587\u751F\u56FE Base URL", "\u4E0E\u5B98\u65B9\u7AEF\u70B9\u540C\u6E90", false, "https://token.sensenova.cn/v1"],
+  ["SN_IMAGE_GEN_MODEL", "\u6587\u751F\u56FE\u6A21\u578B", "U \u7CFB\u5217\u56FE\u50CF\u6A21\u578B", false, "sensenova-u1.5-lite"],
+  ["SN_CHAT_API_KEY", "\u5BF9\u8BDD/\u6587\u672C API Key", "sn-* \u9700\u8981 LLM \u65F6\u4F7F\u7528\uFF1B\u7559\u7A7A\u5219\u590D\u7528 SN_API_KEY", true, ""],
+  ["SN_CHAT_BASE_URL", "\u5BF9\u8BDD/\u6587\u672C Base URL", "\u5B98\u65B9 chat/completions \u7AEF\u70B9", false, "https://token.sensenova.cn/v1"],
+  ["SN_TEXT_API_KEY", "\u6587\u672C API Key", "\u6587\u672C\u4F18\u5316\u7C7B skill\uFF1B\u7559\u7A7A\u5219\u590D\u7528 SN_API_KEY", true, ""],
+  ["SN_TEXT_BASE_URL", "\u6587\u672C Base URL", "\u540C\u4E0A", false, "https://token.sensenova.cn/v1"],
+  ["SN_VISION_API_KEY", "\u89C6\u89C9\u7406\u89E3 API Key", "sn-image-caption / sn-da-image-caption \u4F7F\u7528", true, ""],
+  ["SN_VISION_BASE_URL", "\u89C6\u89C9\u7406\u89E3 Base URL", "\u5B98\u65B9 VLM \u7AEF\u70B9", false, "https://token.sensenova.cn/v1"],
+  ["SERPER_API_KEY", "Serper \u641C\u7D22 Key", "sn-search-image / sn-search-academic \u4F7F\u7528", true, ""],
+  ["SERPER_BASE_URL", "Serper Base URL", "Google \u641C\u7D22\u4EE3\u7406\u5730\u5740", false, "https://google.serper.dev"],
+  ["GITHUB_TOKEN", "GitHub Token", "sn-search-code \u4F7F\u7528\uFF0C\u53EF\u63D0\u901F\u5E76\u63D0\u9AD8\u9650\u989D", true, ""]
 ]);
 
 // client/index.jsx
@@ -75,7 +79,12 @@ var zh = {
   linkDir: "\u6302\u8F7D\u76EE\u5F55",
   linkHint: "\u6BCF\u4E2A skill \u4F1A\u4EE5\u7B26\u53F7\u94FE\u63A5\u6302\u5230\u8FD9\u91CC\u3002\u5FC5\u987B\u662F DSH \u626B\u63CF\u7684\u76EE\u5F55\uFF0C\u5426\u5219 skill \u4E0D\u751F\u6548\u3002\u7559\u7A7A\u4F7F\u7528 ~/.dsh/skills\u3002",
   envTitle: "API \u51ED\u636E\u4E0E\u73AF\u5883\u53D8\u91CF",
-  envHint: "\u5199\u5165 ~/.dsh/sensenova-skills/.env\uFF08\u6743\u9650 600\uFF09\uFF0Cskill \u811A\u672C\u4E0E agent \u53EF source\u3002\u503C\u4E0D\u56DE\u663E\uFF0C\u7559\u7A7A\u5373\u6E05\u9664\u3002",
+  envHint: "\u5199\u5165 ~/.dsh/sensenova-skills/.env\uFF08\u6743\u9650 600\uFF09\uFF0Cskill \u811A\u672C\u4E0E agent \u53EF source\u3002\u503C\u4E0D\u56DE\u663E\uFF0C\u7559\u7A7A\u5373\u4FDD\u6301\u4E0D\u53D8\u3002",
+  mainKey: "SenseNova API Key",
+  mainKeyHint: "\u586B\u8FD9\u4E00\u4E2A\u5373\u53EF\uFF1A\u56FE\u50CF\u3001\u5BF9\u8BDD\u3001\u6587\u672C\u3001\u89C6\u89C9\u5404\u7AEF\u70B9\u540C\u6E90\uFF0C\u4F1A\u81EA\u52A8\u6CBF\u7528\u540C\u4E00\u4E2A key\u3002",
+  showAdvanced: "\u66F4\u591A\u53D8\u91CF\uFF08\u5404\u7AEF\u70B9 URL / \u641C\u7D22 key / GitHub token\uFF09",
+  hideAdvanced: "\u6536\u8D77",
+  advancedHint: "\u4EE5\u4E0B\u6309\u5B98\u65B9\u6587\u6863\u9884\u586B\u4E86\u9ED8\u8BA4\u503C\uFF0C\u901A\u5E38\u65E0\u9700\u4FEE\u6539\u3002",
   configured: "\u5DF2\u914D\u7F6E",
   notConfigured: "\u672A\u914D\u7F6E",
   skillsTitle: "Skills \u5F00\u5173",
@@ -105,7 +114,12 @@ var en = {
   linkDir: "Mount directory",
   linkHint: "Each skill is symlinked here. It must be a scanned DSH root or the skills will not take effect. Leave empty for ~/.dsh/skills.",
   envTitle: "API credentials and environment",
-  envHint: "Written to ~/.dsh/sensenova-skills/.env (mode 600) for skill scripts and the agent to source. Values are never echoed back; empty clears the key.",
+  envHint: "Written to ~/.dsh/sensenova-skills/.env (mode 600) for skill scripts and the agent to source. Values are never echoed back; empty keeps the current value.",
+  mainKey: "SenseNova API Key",
+  mainKeyHint: "This one field is enough: the image, chat, text and vision endpoints are the same origin and share this key automatically.",
+  showAdvanced: "More variables (endpoint URLs, search keys, GitHub token)",
+  hideAdvanced: "Hide",
+  advancedHint: "Prefilled from the official API documentation; rarely needs changing.",
   configured: "configured",
   notConfigured: "not set",
   skillsTitle: "Skill toggles",
@@ -175,6 +189,7 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
   const [draft, setDraft] = (0, import_react.useState)({});
   const [envDraft, setEnvDraft] = (0, import_react.useState)({});
   const [busy, setBusy] = (0, import_react.useState)(false);
+  const [showAdvanced, setShowAdvanced] = (0, import_react.useState)(false);
   const [msg, setMsg] = (0, import_react.useState)(null);
   const apply2 = (res) => {
     if (res && res.ok === true) {
@@ -283,36 +298,70 @@ function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
     /* ② 凭据 */
     (0, import_react.createElement)("div", { style: S.h2 }, t("envTitle")),
     (0, import_react.createElement)("div", { style: S.hint }, t("envHint")),
-    ...COMMON_ENV_KEYS.map(([key, label, hint, secret]) => {
-      const known = envKeys[key]?.configured === true;
-      return (0, import_react.createElement)(
-        "div",
-        { style: S.field, key },
-        (0, import_react.createElement)(
-          "label",
-          { style: S.label },
-          label,
-          " \xB7 ",
-          (0, import_react.createElement)("span", { style: S.tag }, known ? t("configured") : t("notConfigured"))
-        ),
-        (0, import_react.createElement)("input", {
-          style: S.input,
-          type: secret ? "password" : "text",
-          value: envDraft[key] ?? "",
-          placeholder: known ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\uFF08\u7559\u7A7A\u4FDD\u6301\u4E0D\u53D8\uFF09" : hint || key,
-          onChange: (e) => {
-            setMsg(null);
-            setEnvDraft((d) => ({ ...d, [key]: e.target.value }));
-          }
-        })
-      );
-    }),
+    (0, import_react.createElement)(
+      "div",
+      { style: S.field },
+      (0, import_react.createElement)(
+        "label",
+        { style: S.label },
+        t("mainKey"),
+        " \xB7 ",
+        (0, import_react.createElement)("span", { style: S.tag }, envKeys.SN_API_KEY?.configured ? t("configured") : t("notConfigured"))
+      ),
+      (0, import_react.createElement)("input", {
+        style: S.input,
+        type: "password",
+        value: envDraft.SN_API_KEY ?? "",
+        placeholder: "sk-\u2026",
+        onChange: (e) => {
+          setMsg(null);
+          setEnvDraft((d) => ({ ...d, SN_API_KEY: e.target.value }));
+        }
+      }),
+      (0, import_react.createElement)("div", { style: S.hint }, t("mainKeyHint"))
+    ),
     (0, import_react.createElement)(
       "div",
       { style: S.row },
-      (0, import_react.createElement)("button", { style: styles_secondary(), disabled: busy || Object.keys(envDraft).length === 0, onClick: saveEnv }, t("save")),
-      (0, import_react.createElement)("span", { style: S.hint }, config.envFile ? config.envFile : "")
+      (0, import_react.createElement)("button", {
+        style: { ...S.secondary, marginRight: 4 },
+        disabled: busy,
+        onClick: () => setShowAdvanced((v) => !v)
+      }, showAdvanced ? t("hideAdvanced") : t("showAdvanced")),
+      (0, import_react.createElement)("button", { style: S.secondary, disabled: busy || !envDraft.SN_API_KEY, onClick: saveEnv }, t("save")),
+      config.envFile ? (0, import_react.createElement)("span", { style: S.hint }, config.envFile) : null
     ),
+    showAdvanced ? (0, import_react.createElement)(
+      "div",
+      null,
+      (0, import_react.createElement)("div", { style: { ...S.hint, marginTop: 14 } }, t("advancedHint")),
+      ...COMMON_ENV_KEYS.filter(([key]) => key !== "SN_API_KEY").map(([key, label, hint, secret, fallback]) => {
+        const known = envKeys[key]?.configured === true;
+        const current = envDraft[key] ?? known ? envDraft[key] : fallback;
+        return (0, import_react.createElement)(
+          "div",
+          { style: S.field, key },
+          (0, import_react.createElement)(
+            "label",
+            { style: S.label },
+            label,
+            (0, import_react.createElement)("code", { style: { fontSize: 11, opacity: 0.6 } }, key),
+            " \xB7 ",
+            (0, import_react.createElement)("span", { style: S.tag }, known && !secret ? envDraft[key] ?? "\u5DF2\u8BBE" : known ? t("configured") : t("notConfigured"))
+          ),
+          (0, import_react.createElement)("input", {
+            style: S.input,
+            type: secret ? "password" : "text",
+            value: current ?? "",
+            placeholder: known ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\uFF08\u7559\u7A7A\u4FDD\u6301\u4E0D\u53D8\uFF09" : hint || key,
+            onChange: (e) => {
+              setMsg(null);
+              setEnvDraft((d) => ({ ...d, [key]: e.target.value }));
+            }
+          })
+        );
+      })
+    ) : null,
     /* ③ 开关 */
     (0, import_react.createElement)("div", { style: S.h2 }, t("skillsTitle")),
     (0, import_react.createElement)("div", { style: S.hint }, t("skillsHint")),
