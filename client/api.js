@@ -1,21 +1,18 @@
-// dsh-sensenova-skills 设置页 RPC 契约（client 与 host 共享）
-export const SENSENOVA_SKILLS_RPC_CHANNEL = '/dsh-sensenova-skills';
+// dsh-sensenova-skills 设置页契约（client 专用）
+//
+// 配置读写走 ctx.configForms.get(entryId)（dsh-client-ui-settings 官方通道，
+// 底层 remote.settings，由宿主 dsh-settings 自动暴露所有 .volatile() 字段）。
 
-export const SENSENOVA_SKILLS_ENDPOINTS = Object.freeze({
-  getConfig: 'skills.getConfig',
-  setConfig: 'skills.setConfig',
-  status: 'skills.status',
-  sync: 'skills.sync',
+export const SENSENOVA_SKILLS_ENTRY_ID = 'dsh-sensenova-skills';
+
+export const SENSENOVA_SKILLS_FIELDS = Object.freeze({
+  repoURL: 'repoURL',
+  ref: 'ref',
+  runtimeDir: 'runtimeDir',
 });
 
-/** 浏览器可见的配置视图（不暴露敏感信息）。 */
-export function redactConfig(c) {
-  return {
-    repoURL: c?.repoURL ?? '',
-    ref: c?.ref ?? 'main',
-    runtimeDir: c?.runtimeDir ?? '',
-    syncedAt: c?.syncedAt ?? null,
-    skillsCount: c?.skillsCount ?? null,
-    via: c?.via ?? null,
-  };
-}
+export const SENSENOVA_SKILLS_DEFAULTS = Object.freeze({
+  repoURL: 'https://github.com/OpenSenseNova/SenseNova-Skills.git',
+  ref: 'main',
+  runtimeDir: '',
+});
