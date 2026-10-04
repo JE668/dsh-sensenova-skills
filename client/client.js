@@ -31,17 +31,25 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_react = require("react");
+
+// client/api.js
+var SENSENOVA_SKILLS_RPC_CHANNEL = "/dsh-sensenova-skills";
+var SENSENOVA_SKILLS_ENDPOINTS = Object.freeze({
+  getConfig: "skills.getConfig",
+  setConfig: "skills.setConfig",
+  status: "skills.status",
+  sync: "skills.sync"
+});
+
+// client/index.jsx
 var name = "dsh-sensenova-skills";
-var inject = ["slots", "locale", "configForms"];
+var inject = ["slots", "connection", "locale"];
 var NS = "sensenova-skills";
-var ENTRY_ID = "dsh-sensenova-skills";
-var ITEM_ID = "sensenova-skills";
-var ITEM_ORDER = 41;
 var DEFAULT_REPO = "https://github.com/OpenSenseNova/SenseNova-Skills.git";
 var zh = {
+  section: "SenseNova Skills",
   title: "SenseNova Skills",
-  summary: "\u5B98\u65B9\u6280\u80FD\u6865\uFF1A\u8FD0\u884C\u65F6\u62C9\u53D6 36 \u4E2A MIT \u6280\u80FD\uFF0C\u968F\u4E0A\u6E38\u66F4\u65B0\u540C\u6B65\u3002",
-  detail: "\u5B98\u65B9\u6280\u80FD\u6865\uFF1A\u4ECE SenseNova-Skills \u4ED3\u5E93\u5728\u8FD0\u884C\u65F6\u62C9\u53D6 36 \u4E2A MIT \u8BB8\u53EF\u6280\u80FD\uFF0C\u968F\u4E0A\u6E38\u66F4\u65B0\u540C\u6B65\u3002",
+  subtitle: "\u5B98\u65B9\u6280\u80FD\u6865\uFF1A\u5728\u8FD0\u884C\u65F6\u4ECE SenseNova-Skills \u4ED3\u5E93\u62C9\u53D6 36 \u4E2A MIT \u8BB8\u53EF\u6280\u80FD\uFF0C\u968F\u4E0A\u6E38\u66F4\u65B0\u540C\u6B65\u3002",
   repoURL: "\u4E0A\u6E38\u4ED3\u5E93 URL",
   repoHint: "git \u4ED3\u5E93\u5730\u5740\uFF1B\u9ED8\u8BA4\u5B98\u65B9 SenseNova-Skills\u3002",
   ref: "Git ref",
@@ -50,16 +58,19 @@ var zh = {
   runtimeHint: "\u7559\u7A7A\u5219\u4F7F\u7528 ~/.dsh/profiles/<\u5F53\u524D profile>/sensenova-skills\u3002",
   save: "\u4FDD\u5B58",
   saving: "\u4FDD\u5B58\u4E2D\u2026",
-  saved: "\u5DF2\u4FDD\u5B58\u3002\u91CD\u542F DSH \u540E\u751F\u6548\u3002",
-  failed: "\u4FDD\u5B58\u5931\u8D25\uFF1A\u5BBF\u4E3B\u62D2\u7EDD\u4E86\u672C\u6B21\u5199\u5165\u3002",
-  readOnly: "\u8BE5\u914D\u7F6E\u5F53\u524D\u4E0D\u53EF\u5199\u5165\u3002",
-  unavailable: "\u914D\u7F6E\u670D\u52A1\u4E0D\u53EF\u7528\uFF08\u5BBF\u4E3B\u672A\u66B4\u9732\u8BE5\u63D2\u4EF6\u6761\u76EE\uFF09\u3002",
-  syncHint: "\u4FDD\u5B58\u540E\u5BF9 DSH \u8BF4\u4E00\u53E5\u300C\u540C\u6B65 SenseNova skills\u300D\uFF0C\u6216\u8C03\u7528 sensenova_skills_sync \u5DE5\u5177\uFF0C\u5373\u53EF\u6309\u4E0A\u9762\u7684\u4ED3\u5E93 / ref / \u76EE\u5F55\u62C9\u53D6\u6700\u65B0\u6280\u80FD\u3002"
+  saved: "\u5DF2\u4FDD\u5B58\u3002",
+  sync: "\u7ACB\u5373\u540C\u6B65",
+  syncing: "\u540C\u6B65\u4E2D\u2026",
+  synced: (n) => `\u5DF2\u540C\u6B65 ${n} \u4E2A\u6280\u80FD\u3002`,
+  neverSynced: "\u5C1A\u672A\u540C\u6B65\u3002",
+  failed: "\u64CD\u4F5C\u5931\u8D25\u3002",
+  loading: "\u52A0\u8F7D\u4E2D\u2026",
+  loadFailed: "\u65E0\u6CD5\u8BFB\u53D6\u914D\u7F6E\u3002"
 };
 var en = {
+  section: "SenseNova Skills",
   title: "SenseNova Skills",
-  summary: "Official skills bridge: pulls 36 MIT-licensed skills at runtime and follows upstream.",
-  detail: "Official skills bridge: pulls 36 MIT-licensed skills from the SenseNova-Skills repo at runtime and follows upstream updates.",
+  subtitle: "Official skills bridge: pulls 36 MIT-licensed skills from the SenseNova-Skills repo at runtime and follows upstream.",
   repoURL: "Upstream repo URL",
   repoHint: "Git repository URL; defaults to the official SenseNova-Skills repo.",
   ref: "Git ref",
@@ -68,13 +79,17 @@ var en = {
   runtimeHint: "Leave empty to use ~/.dsh/profiles/<current profile>/sensenova-skills.",
   save: "Save",
   saving: "Saving\u2026",
-  saved: "Saved. Restart DSH to take effect.",
-  failed: "Save failed: the host rejected this write.",
-  readOnly: "Configuration is not writable right now.",
-  unavailable: "Settings service unavailable (the host did not expose this plugin entry).",
-  syncHint: "After saving, tell DSH \u201Csync SenseNova skills\u201D (or call the sensenova_skills_sync tool) to pull the latest skills from the repo / ref / directory above."
+  saved: "Saved.",
+  sync: "Sync now",
+  syncing: "Syncing\u2026",
+  synced: (n) => `Synced ${n} skills.`,
+  neverSynced: "Never synced.",
+  failed: "Operation failed.",
+  loading: "Loading\u2026",
+  loadFailed: "Could not read the configuration."
 };
 var styles = {
+  card: { maxWidth: 560 },
   field: { display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 },
   label: { fontSize: 13 },
   hint: { fontSize: 12, opacity: 0.65, lineHeight: 1.4 },
@@ -102,6 +117,17 @@ var styles = {
     background: "var(--dsw-alias-button-primary-fill, #4f6ef7)",
     color: "var(--dsw-alias-label-primary-foreground, #fff)"
   },
+  secondary: {
+    font: "inherit",
+    cursor: "pointer",
+    height: 36,
+    padding: "0 16px",
+    borderRadius: 999,
+    fontSize: 13,
+    border: "1px solid var(--dsw-alias-border-l2, #d1d5db)",
+    background: "transparent",
+    color: "var(--dsw-alias-label-primary, inherit)"
+  },
   ok: { fontSize: 12, color: "var(--dsw-alias-state-success-primary, #34c759)" },
   err: { fontSize: 12, color: "var(--dsw-alias-state-error-primary, #ff3b30)", whiteSpace: "pre-wrap" },
   box: {
@@ -115,37 +141,87 @@ var styles = {
     lineHeight: 1.5
   }
 };
-var FIELDS = { repoURL: "repoURL", ref: "ref", runtimeDir: "runtimeDir" };
-function SenseNovaSkillsCard(props) {
-  const settings = props.settings;
-  const t = props.t ?? ((k) => zh[k] ?? k);
-  const subscribe = (0, import_react.useCallback)((l) => settings.subscribe(l), [settings]);
-  const getSnapshot = (0, import_react.useCallback)(() => settings.getSnapshot(), [settings]);
-  const snapshot = (0, import_react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-  const value = snapshot?.value ?? {};
-  const writable = snapshot?.writable === true && snapshot?.mode === "host";
-  if (props.view === "summary") return (0, import_react.createElement)("span", null, t("summary"));
-  if (snapshot?.status !== "ready" || value === void 0) {
-    return (0, import_react.createElement)("p", { style: styles.err }, t("unavailable"));
-  }
-  const current = {
-    repoURL: value.repoURL ?? DEFAULT_REPO,
-    ref: value.ref ?? "main",
-    runtimeDir: value.runtimeDir ?? ""
+function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
+  const [config, setConfig] = (0, import_react.useState)(null);
+  const [error, setError] = (0, import_react.useState)(null);
+  const [draft, setDraft] = (0, import_react.useState)({});
+  const [saving, setSaving] = (0, import_react.useState)(false);
+  const [syncing, setSyncing] = (0, import_react.useState)(false);
+  const [msg, setMsg] = (0, import_react.useState)(null);
+  (0, import_react.useEffect)(() => {
+    let alive = true;
+    rpcCall(SENSENOVA_SKILLS_ENDPOINTS.getConfig, {}).then((res) => {
+      if (!alive) return;
+      if (res && res.ok === true) setConfig(res.value ?? {});
+      else setError(t("loadFailed"));
+    }).catch((e) => {
+      if (alive) setError(e?.message ?? t("loadFailed"));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (error) return (0, import_react.createElement)("p", { style: styles.err }, error);
+  if (config === null) return (0, import_react.createElement)("p", { style: styles.hint }, t("loading"));
+  const field = (key, fallback) => key in draft ? draft[key] : config[key] ?? fallback;
+  const set = (key, value) => {
+    setMsg(null);
+    setDraft((d) => ({ ...d, [key]: value }));
   };
-  const setField = (key, next) => props.actions.stage(FIELDS[key], next);
+  const dirty = Object.keys(draft).length > 0;
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const updates = { ...draft };
+      const res = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.setConfig, { updates });
+      if (res && res.ok === true) {
+        setConfig(res.value ?? {});
+        setDraft({});
+        setMsg({ kind: "ok", text: t("saved") });
+      } else setMsg({ kind: "err", text: res?.error?.message ?? t("failed") });
+    } catch (e) {
+      setMsg({ kind: "err", text: e?.message ?? t("failed") });
+    } finally {
+      setSaving(false);
+    }
+  };
+  const sync = async () => {
+    setSyncing(true);
+    setMsg(null);
+    try {
+      if (dirty) {
+        const saved = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.setConfig, { updates: { ...draft } });
+        if (saved && saved.ok === true) {
+          setConfig(saved.value ?? {});
+          setDraft({});
+        }
+      }
+      const res = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.sync, {});
+      if (res && res.ok === true) {
+        setConfig(res.value ?? {});
+        const n = res.value?.skillsCount;
+        setMsg({ kind: "ok", text: typeof n === "number" ? t("synced")(n) : t("saved") });
+      } else setMsg({ kind: "err", text: res?.error?.message ?? t("failed") });
+    } catch (e) {
+      setMsg({ kind: "err", text: e?.message ?? t("failed") });
+    } finally {
+      setSyncing(false);
+    }
+  };
+  const status = config.syncedAt ? t("synced")(config.skillsCount ?? "?") : t("neverSynced");
   return (0, import_react.createElement)(
     "div",
-    null,
-    (0, import_react.createElement)("p", { style: { ...styles.hint, margin: "0 0 12px" } }, t("detail")),
+    { style: styles.card },
+    (0, import_react.createElement)("p", { style: { ...styles.hint, margin: "0 0 12px" } }, t("subtitle")),
     (0, import_react.createElement)(
       "div",
       { style: styles.field },
       (0, import_react.createElement)("label", { style: styles.label }, t("repoURL")),
       (0, import_react.createElement)("input", {
         style: styles.input,
-        value: props.actions.draft(FIELDS.repoURL).value ?? current.repoURL,
-        onChange: (e) => setField("repoURL", e.target.value)
+        value: field("repoURL", DEFAULT_REPO),
+        onChange: (e) => set("repoURL", e.target.value)
       }),
       (0, import_react.createElement)("div", { style: styles.hint }, t("repoHint"))
     ),
@@ -155,8 +231,8 @@ function SenseNovaSkillsCard(props) {
       (0, import_react.createElement)("label", { style: styles.label }, t("ref")),
       (0, import_react.createElement)("input", {
         style: styles.input,
-        value: props.actions.draft(FIELDS.ref).value ?? current.ref,
-        onChange: (e) => setField("ref", e.target.value)
+        value: field("ref", "main"),
+        onChange: (e) => set("ref", e.target.value)
       }),
       (0, import_react.createElement)("div", { style: styles.hint }, t("refHint"))
     ),
@@ -166,88 +242,47 @@ function SenseNovaSkillsCard(props) {
       (0, import_react.createElement)("label", { style: styles.label }, t("runtimeDir")),
       (0, import_react.createElement)("input", {
         style: styles.input,
-        value: props.actions.draft(FIELDS.runtimeDir).value ?? current.runtimeDir,
+        value: field("runtimeDir", ""),
         placeholder: "~/.dsh/profiles/<profile>/sensenova-skills",
-        onChange: (e) => setField("runtimeDir", e.target.value)
+        onChange: (e) => set("runtimeDir", e.target.value)
       }),
       (0, import_react.createElement)("div", { style: styles.hint }, t("runtimeHint"))
     ),
+    (0, import_react.createElement)("div", { style: styles.box }, status),
     (0, import_react.createElement)(
       "div",
       { style: styles.row },
-      (0, import_react.createElement)("button", {
-        style: styles.primary,
-        disabled: !writable || props.actions.saving() || props.actions.dirty() === false,
-        onClick: () => props.actions.save()
-      }, props.actions.saving() ? t("saving") : t("save")),
-      !writable && (0, import_react.createElement)("span", { style: styles.hint }, t("readOnly"))
+      (0, import_react.createElement)(
+        "button",
+        { style: styles.primary, disabled: saving || !dirty, onClick: save },
+        saving ? t("saving") : t("save")
+      ),
+      (0, import_react.createElement)(
+        "button",
+        { style: styles.secondary, disabled: syncing || saving, onClick: sync },
+        syncing ? t("syncing") : t("sync")
+      )
     ),
-    props.actions.message() === "saved" ? (0, import_react.createElement)("p", { style: styles.ok }, t("saved")) : null,
-    props.actions.message() === "failed" ? (0, import_react.createElement)("p", { style: styles.err }, t("failed")) : null,
-    (0, import_react.createElement)("div", { style: styles.box }, t("syncHint"))
+    msg ? (0, import_react.createElement)("p", { style: msg.kind === "ok" ? styles.ok : styles.err }, msg.text) : null
   );
 }
 function apply(ctx) {
-  const t = ctx.locale.bind(NS);
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), "dsh-sensenova-skills: dictionaries");
-  const form = ctx.configForms.get(ENTRY_ID);
-  const drafts = /* @__PURE__ */ new Map();
-  let message = null;
-  let saving = false;
-  const actions = {
-    stage(field, value) {
-      message = null;
-      drafts.set(field, value);
-    },
-    draft(field) {
-      return drafts.has(field) ? { kind: "set", value: drafts.get(field) } : { kind: "unset" };
-    },
-    dirty() {
-      return drafts.size > 0;
-    },
-    saving() {
-      return saving;
-    },
-    message() {
-      return message;
-    },
-    async save() {
-      if (saving || drafts.size === 0) return;
-      saving = true;
-      try {
-        const ops = [...drafts.entries()].map(([field, value]) => ({ op: "set", path: [field], value }));
-        const ok = await form.mutate(ops, form.getSnapshot()?.revision);
-        if (ok) {
-          drafts.clear();
-          message = "saved";
-        } else {
-          message = "failed";
-        }
-      } catch {
-        message = "failed";
-      } finally {
-        saving = false;
-      }
-    },
-    inject() {
-      return { settings: form, t, actions };
-    }
-  };
-  ctx.effect(() => () => drafts.clear(), "dsh-sensenova-skills: drafts");
-  ctx.effect(() => ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(
-    "plugins.item",
+  const rpcCall = (endpoint, payload, signal) => ctx.connection.rpc.call(SENSENOVA_SKILLS_RPC_CHANNEL, endpoint, payload, signal);
+  const translate = ctx.locale.bind(NS);
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), "dsh-sensenova-skills: locale dictionaries");
+  ctx.slots.inject(
+    "settings.section",
     () => ctx.slots.register(
       {
-        name: "plugins.item",
-        id: ITEM_ID,
-        order: ITEM_ORDER,
-        label: () => t("title"),
-        locale: NS,
-        inject: () => actions.inject()
+        name: "settings.section",
+        id: "sensenova-skills",
+        order: 41,
+        label: () => translate("section"),
+        inject: () => ({ rpcCall, t: translate })
       },
-      SenseNovaSkillsCard
+      SenseNovaSkillsSettingsTab
     )
-  )), "dsh-sensenova-skills: page");
+  );
 }
 
     return module.exports;

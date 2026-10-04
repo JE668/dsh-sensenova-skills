@@ -1,24 +1,21 @@
-// dsh-sensenova-skills 网页客户端：插件设置卡片（Plugins 页面）
+// dsh-sensenova-skills 网页客户端：Settings 左侧一级入口「SenseNova Skills」
 //
-// 严格对齐官方 @deepseek-ai/dsh-client-ui-settings-web-search 的范式。
-// 配置读写由宿主 dsh-settings 通过 remote.settings 提供（.volatile() 字段）。
+// 注册形状逐字对齐 dsh-pocket（同一 profile 里已验证可用）。
+// 传输走 ctx.connection.rpc.call(channel, endpoint, payload)，宿主路由见 lib/rpc.js。
 
-import { createElement as h, useCallback, useSyncExternalStore } from 'react';
+import { createElement as h, useEffect, useState } from 'react';
+import { SENSENOVA_SKILLS_RPC_CHANNEL, SENSENOVA_SKILLS_ENDPOINTS } from './api.js';
 
 const name = 'dsh-sensenova-skills';
-const inject = ['slots', 'locale', 'configForms'];
+const inject = ['slots', 'connection', 'locale'];
 
 const NS = 'sensenova-skills';
-const ENTRY_ID = 'dsh-sensenova-skills';
-const ITEM_ID = 'sensenova-skills';
-const ITEM_ORDER = 41;
-
 const DEFAULT_REPO = 'https://github.com/OpenSenseNova/SenseNova-Skills.git';
 
 const zh = {
+  section: 'SenseNova Skills',
   title: 'SenseNova Skills',
-  summary: '官方技能桥：运行时拉取 36 个 MIT 技能，随上游更新同步。',
-  detail: '官方技能桥：从 SenseNova-Skills 仓库在运行时拉取 36 个 MIT 许可技能，随上游更新同步。',
+  subtitle: '官方技能桥：在运行时从 SenseNova-Skills 仓库拉取 36 个 MIT 许可技能，随上游更新同步。',
   repoURL: '上游仓库 URL',
   repoHint: 'git 仓库地址；默认官方 SenseNova-Skills。',
   ref: 'Git ref',
@@ -27,17 +24,20 @@ const zh = {
   runtimeHint: '留空则使用 ~/.dsh/profiles/<当前 profile>/sensenova-skills。',
   save: '保存',
   saving: '保存中…',
-  saved: '已保存。重启 DSH 后生效。',
-  failed: '保存失败：宿主拒绝了本次写入。',
-  readOnly: '该配置当前不可写入。',
-  unavailable: '配置服务不可用（宿主未暴露该插件条目）。',
-  syncHint: '保存后对 DSH 说一句「同步 SenseNova skills」，或调用 sensenova_skills_sync 工具，即可按上面的仓库 / ref / 目录拉取最新技能。',
+  saved: '已保存。',
+  sync: '立即同步',
+  syncing: '同步中…',
+  synced: (n) => `已同步 ${n} 个技能。`,
+  neverSynced: '尚未同步。',
+  failed: '操作失败。',
+  loading: '加载中…',
+  loadFailed: '无法读取配置。',
 };
 
 const en = {
+  section: 'SenseNova Skills',
   title: 'SenseNova Skills',
-  summary: 'Official skills bridge: pulls 36 MIT-licensed skills at runtime and follows upstream.',
-  detail: 'Official skills bridge: pulls 36 MIT-licensed skills from the SenseNova-Skills repo at runtime and follows upstream updates.',
+  subtitle: 'Official skills bridge: pulls 36 MIT-licensed skills from the SenseNova-Skills repo at runtime and follows upstream.',
   repoURL: 'Upstream repo URL',
   repoHint: 'Git repository URL; defaults to the official SenseNova-Skills repo.',
   ref: 'Git ref',
@@ -46,14 +46,18 @@ const en = {
   runtimeHint: 'Leave empty to use ~/.dsh/profiles/<current profile>/sensenova-skills.',
   save: 'Save',
   saving: 'Saving…',
-  saved: 'Saved. Restart DSH to take effect.',
-  failed: 'Save failed: the host rejected this write.',
-  readOnly: 'Configuration is not writable right now.',
-  unavailable: 'Settings service unavailable (the host did not expose this plugin entry).',
-  syncHint: 'After saving, tell DSH “sync SenseNova skills” (or call the sensenova_skills_sync tool) to pull the latest skills from the repo / ref / directory above.',
+  saved: 'Saved.',
+  sync: 'Sync now',
+  syncing: 'Syncing…',
+  synced: (n) => `Synced ${n} skills.`,
+  neverSynced: 'Never synced.',
+  failed: 'Operation failed.',
+  loading: 'Loading…',
+  loadFailed: 'Could not read the configuration.',
 };
 
 const styles = {
+  card: { maxWidth: 560 },
   field: { display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 },
   label: { fontSize: 13 },
   hint: { fontSize: 12, opacity: 0.65, lineHeight: 1.4 },
@@ -71,6 +75,12 @@ const styles = {
     background: 'var(--dsw-alias-button-primary-fill, #4f6ef7)',
     color: 'var(--dsw-alias-label-primary-foreground, #fff)',
   },
+  secondary: {
+    font: 'inherit', cursor: 'pointer', height: 36,
+    padding: '0 16px', borderRadius: 999, fontSize: 13,
+    border: '1px solid var(--dsw-alias-border-l2, #d1d5db)',
+    background: 'transparent', color: 'var(--dsw-alias-label-primary, inherit)',
+  },
   ok: { fontSize: 12, color: 'var(--dsw-alias-state-success-primary, #34c759)' },
   err: { fontSize: 12, color: 'var(--dsw-alias-state-error-primary, #ff3b30)', whiteSpace: 'pre-wrap' },
   box: {
@@ -81,128 +91,123 @@ const styles = {
   },
 };
 
-const FIELDS = { repoURL: 'repoURL', ref: 'ref', runtimeDir: 'runtimeDir' };
+function SenseNovaSkillsSettingsTab({ rpcCall, t }) {
+  const [config, setConfig] = useState(null);
+  const [error, setError] = useState(null);
+  const [draft, setDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [msg, setMsg] = useState(null);
 
-function SenseNovaSkillsCard(props) {
-  const settings = props.settings;
-  const t = props.t ?? ((k) => zh[k] ?? k);
+  useEffect(() => {
+    let alive = true;
+    rpcCall(SENSENOVA_SKILLS_ENDPOINTS.getConfig, {})
+      .then((res) => {
+        if (!alive) return;
+        if (res && res.ok === true) setConfig(res.value ?? {});
+        else setError(t('loadFailed'));
+      })
+      .catch((e) => { if (alive) setError(e?.message ?? t('loadFailed')); });
+    return () => { alive = false; };
+  }, []);
 
-  const subscribe = useCallback((l) => settings.subscribe(l), [settings]);
-  const getSnapshot = useCallback(() => settings.getSnapshot(), [settings]);
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  if (error) return h('p', { style: styles.err }, error);
+  if (config === null) return h('p', { style: styles.hint }, t('loading'));
 
-  const value = snapshot?.value ?? {};
-  const writable = snapshot?.writable === true && snapshot?.mode === 'host';
+  const field = (key, fallback) => (key in draft ? draft[key] : (config[key] ?? fallback));
+  const set = (key, value) => { setMsg(null); setDraft((d) => ({ ...d, [key]: value })); };
+  const dirty = Object.keys(draft).length > 0;
 
-  if (props.view === 'summary') return h('span', null, t('summary'));
-  if (snapshot?.status !== 'ready' || value === undefined) {
-    return h('p', { style: styles.err }, t('unavailable'));
-  }
-
-  const current = {
-    repoURL: value.repoURL ?? DEFAULT_REPO,
-    ref: value.ref ?? 'main',
-    runtimeDir: value.runtimeDir ?? '',
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    try {
+      const updates = { ...draft };
+      const res = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.setConfig, { updates });
+      if (res && res.ok === true) { setConfig(res.value ?? {}); setDraft({}); setMsg({ kind: 'ok', text: t('saved') }); }
+      else setMsg({ kind: 'err', text: res?.error?.message ?? t('failed') });
+    } catch (e) { setMsg({ kind: 'err', text: e?.message ?? t('failed') }); }
+    finally { setSaving(false); }
   };
 
-  const setField = (key, next) => props.actions.stage(FIELDS[key], next);
+  const sync = async () => {
+    setSyncing(true); setMsg(null);
+    try {
+      // 先落盘未保存的改动，保证同步用的是最新仓库 / ref / 目录。
+      if (dirty) {
+        const saved = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.setConfig, { updates: { ...draft } });
+        if (saved && saved.ok === true) { setConfig(saved.value ?? {}); setDraft({}); }
+      }
+      const res = await rpcCall(SENSENOVA_SKILLS_ENDPOINTS.sync, {});
+      if (res && res.ok === true) {
+        setConfig(res.value ?? {});
+        const n = res.value?.skillsCount;
+        setMsg({ kind: 'ok', text: typeof n === 'number' ? t('synced')(n) : t('saved') });
+      } else setMsg({ kind: 'err', text: res?.error?.message ?? t('failed') });
+    } catch (e) { setMsg({ kind: 'err', text: e?.message ?? t('failed') }); }
+    finally { setSyncing(false); }
+  };
 
-  return h('div', null,
-    h('p', { style: { ...styles.hint, margin: '0 0 12px' } }, t('detail')),
+  const status = config.syncedAt
+    ? t('synced')(config.skillsCount ?? '?')
+    : t('neverSynced');
+
+  return h('div', { style: styles.card },
+    h('p', { style: { ...styles.hint, margin: '0 0 12px' } }, t('subtitle')),
+
     h('div', { style: styles.field },
       h('label', { style: styles.label }, t('repoURL')),
       h('input', {
-        style: styles.input,
-        value: props.actions.draft(FIELDS.repoURL).value ?? current.repoURL,
-        onChange: (e) => setField('repoURL', e.target.value),
+        style: styles.input, value: field('repoURL', DEFAULT_REPO),
+        onChange: (e) => set('repoURL', e.target.value),
       }),
       h('div', { style: styles.hint }, t('repoHint')),
     ),
     h('div', { style: styles.field },
       h('label', { style: styles.label }, t('ref')),
       h('input', {
-        style: styles.input,
-        value: props.actions.draft(FIELDS.ref).value ?? current.ref,
-        onChange: (e) => setField('ref', e.target.value),
+        style: styles.input, value: field('ref', 'main'),
+        onChange: (e) => set('ref', e.target.value),
       }),
       h('div', { style: styles.hint }, t('refHint')),
     ),
     h('div', { style: styles.field },
       h('label', { style: styles.label }, t('runtimeDir')),
       h('input', {
-        style: styles.input,
-        value: props.actions.draft(FIELDS.runtimeDir).value ?? current.runtimeDir,
+        style: styles.input, value: field('runtimeDir', ''),
         placeholder: '~/.dsh/profiles/<profile>/sensenova-skills',
-        onChange: (e) => setField('runtimeDir', e.target.value),
+        onChange: (e) => set('runtimeDir', e.target.value),
       }),
       h('div', { style: styles.hint }, t('runtimeHint')),
     ),
+    h('div', { style: styles.box }, status),
     h('div', { style: styles.row },
-      h('button', {
-        style: styles.primary,
-        disabled: !writable || props.actions.saving() || props.actions.dirty() === false,
-        onClick: () => props.actions.save(),
-      }, props.actions.saving() ? t('saving') : t('save')),
-      !writable && h('span', { style: styles.hint }, t('readOnly')),
+      h('button', { style: styles.primary, disabled: saving || !dirty, onClick: save },
+        saving ? t('saving') : t('save')),
+      h('button', { style: styles.secondary, disabled: syncing || saving, onClick: sync },
+        syncing ? t('syncing') : t('sync')),
     ),
-    props.actions.message() === 'saved' ? h('p', { style: styles.ok }, t('saved')) : null,
-    props.actions.message() === 'failed' ? h('p', { style: styles.err }, t('failed')) : null,
-    h('div', { style: styles.box }, t('syncHint')),
+    msg ? h('p', { style: msg.kind === 'ok' ? styles.ok : styles.err }, msg.text) : null,
   );
 }
 
 function apply(ctx) {
-  const t = ctx.locale.bind(NS);
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-sensenova-skills: dictionaries');
-
-  const form = ctx.configForms.get(ENTRY_ID);
-  const drafts = new Map();
-  let message = null;
-  let saving = false;
-
-  const actions = {
-    stage(field, value) {
-      message = null;
-      drafts.set(field, value);
-    },
-    draft(field) {
-      return drafts.has(field) ? { kind: 'set', value: drafts.get(field) } : { kind: 'unset' };
-    },
-    dirty() { return drafts.size > 0; },
-    saving() { return saving; },
-    message() { return message; },
-    async save() {
-      if (saving || drafts.size === 0) return;
-      saving = true;
-      try {
-        const ops = [...drafts.entries()].map(([field, value]) => ({ op: 'set', path: [field], value }));
-        const ok = await form.mutate(ops, form.getSnapshot()?.revision);
-        if (ok) { drafts.clear(); message = 'saved'; } else { message = 'failed'; }
-      } catch {
-        message = 'failed';
-      } finally {
-        saving = false;
-      }
-    },
-    inject() { return { settings: form, t, actions }; },
-  };
-
-  ctx.effect(() => () => drafts.clear(), 'dsh-sensenova-skills: drafts');
-
-  ctx.effect(() => ctx.configForms.whileServed([ENTRY_ID], () => ctx.slots.inject(
-    'plugins.item',
+  const rpcCall = (endpoint, payload, signal) =>
+    ctx.connection.rpc.call(SENSENOVA_SKILLS_RPC_CHANNEL, endpoint, payload, signal);
+  const translate = ctx.locale.bind(NS);
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-sensenova-skills: locale dictionaries');
+  ctx.slots.inject(
+    'settings.section',
     () => ctx.slots.register(
       {
-        name: 'plugins.item',
-        id: ITEM_ID,
-        order: ITEM_ORDER,
-        label: () => t('title'),
-        locale: NS,
-        inject: () => actions.inject(),
+        name: 'settings.section',
+        id: 'sensenova-skills',
+        order: 41,
+        label: () => translate('section'),
+        inject: () => ({ rpcCall, t: translate }),
       },
-      SenseNovaSkillsCard,
+      SenseNovaSkillsSettingsTab,
     ),
-  )), 'dsh-sensenova-skills: page');
+  );
 }
 
 export { apply, inject, name };
