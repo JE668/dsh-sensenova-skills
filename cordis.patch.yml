@@ -12,13 +12,17 @@
 # 同步位置（默认）：~/.dsh/plugins/dsh-sensenova-skills/runtime/
 # 可选配置：
 #
-#   - id: dsh-sensenova-skills
+#   - id: sensenova-skills
 #     config:
 #       repoURL: https://github.com/OpenSenseNova/SenseNova-Skills  # 可改为镜像/私有 fork
 #       ref: main        # 可锁定到具体 tag / commit
 #       runtimeDir: /custom/path   # 可选，覆盖默认运行时目录
+#
+# id 必须与包名 dsh-sensenova-skills 不同：bundle 列表里已按包名登记了一个条目，
+# 同名会被 configEditor.entries() 的去重逻辑剔除，导致设置页保存任何字段都失败
+# （No configurable plugin entry）。dshmarket / dsh-free-search 等插件均遵循此约定。
 
 - insert:
-  - id: dsh-sensenova-skills
+  - id: sensenova-skills
     name: dsh-sensenova-skills
     config: {}
